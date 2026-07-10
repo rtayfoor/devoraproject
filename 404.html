@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found | Ormidia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: white;
+        }
+        .error-container {
+            text-align: center;
+            max-width: 500px;
+        }
+        .error-container .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: #E30613;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2.5rem;
+        }
+        .error-container h1 {
+            font-size: 6rem;
+            font-weight: 800;
+            color: #E30613;
+            margin-bottom: 0.5rem;
+        }
+        .error-container h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .error-container p {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            background: #E30613;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #b80510;
+            transform: translateY(-2px);
+        }
+        .btn i { margin-right: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="logo-icon">🚗</div>
+        <h1>404</h1>
+        <h2>Page Not Found</h2>
+        <p>Oops! The page you're looking for doesn't exist or has been moved.</p>
+        <a href="index.html" class="btn"><i class="fas fa-home"></i> Back to Home</a>
+    </div>
+</body>
+</html>
