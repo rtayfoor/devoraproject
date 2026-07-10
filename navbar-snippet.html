@@ -1,0 +1,29 @@
+<!-- Navbar Snippet - Copy this into all HTML files -->
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="index.html" class="logo">
+            <!-- Logo with graceful fallback -->
+            <img src="logo.jpg" alt="Ormidia" class="logo-img" 
+                 onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\"background:#E30613;color:white;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;flex-shrink:0;\">🚗</span> Ormidia'">
+            Ormidia
+        </a>
+        <ul class="nav-menu">
+            <li><a href="index.html" class="nav-link active">Home</a></li>
+            <li><a href="products.html" class="nav-link">Products</a></li>
+            <li><a href="index.html#about" class="nav-link">About</a></li>
+            <li><a href="index.html#contact" class="nav-link">Contact</a></li>
+        </ul>
+        <div class="nav-icons">
+            <a href="cart.html" class="cart-icon">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="navCartCount">0</span>
+            </a>
+            <div id="auth-icon">
+                <a href="auth.html"><i class="fas fa-user"></i></a>
+            </div>
+            <div class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </div>
+</nav>
