@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Instructions | Ormidia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #E30613;
+            --primary-dark: #b80510;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --radius: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f7fa;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+        .container { max-width: 700px; margin: 0 auto; padding: 0 1.5rem; }
+
+        .payment-page {
+            padding: 6rem 0 3rem;
+            min-height: 100vh;
+        }
+        .payment-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 2.5rem;
+            box-shadow: var(--shadow);
+        }
+        .payment-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .payment-header h1 {
+            font-size: 1.8rem;
+            color: #1e293b;
+        }
+        .payment-header p { color: #64748b; }
+
+        .bank-details {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border: 2px solid #e2e8f0;
+        }
+        .bank-details .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .bank-details .detail-row:last-child { border-bottom: none; }
+        .bank-details .label { font-weight: 600; color: #475569; }
+        .bank-details .value { font-weight: 500; }
+        .bank-details .value.important { 
+            color: var(--primary); 
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .bank-details .iban-display {
+            background: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            margin: 0.5rem 0;
+        }
+
+        .payment-steps {
+            margin: 1.5rem 0;
+            padding: 0 0 0 1.5rem;
+        }
+        .payment-steps li {
+            padding: 0.5rem 0;
+            color: #475569;
+        }
+
+        .order-summary {
+            background: #f1f5f9;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+        .order-summary .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+        }
+        .order-summary .total {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.2rem;
+            border-top: 2px solid #e2e8f0;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            justify-content: center;
+        }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-outline {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .copy-btn:hover { text-decoration: underline; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 2100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .loading-spinner { text-align: center; padding: 3rem; }
+        .loading-spinner i {
+            font-size: 2rem;
+            color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .payment-card { padding: 1.5rem; }
+            .bank-details .detail-row { flex-direction: column; }
+            .bank-details .value { margin-top: 0.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+<section class="payment-page">
+    <div class="container">
+        <div class="payment-card" id="paymentContent">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading payment details...</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    (function() {
+        // Get order ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('orderId');
+
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.background = isError ? '#dc2626' : '#1e293b';
+            toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function loadPaymentInstructions() {
+            const container = document.getElementById('paymentContent');
+            
+            if (!orderId) {
+                container.innerHTML = `
+                    <div style="text-align:center;padding:2rem;">
+                        <i class="fas fa-exclamation-circle" style="font-size:3rem;color:#E30613;display:block;margin-bottom:1rem;"></i>
+                        <h2>No Order Found</h2>
+                        <p>Please go back and complete your order first.</p>
+                        <a href="products.html" class="btn btn-primary" style="margin-top:1rem;width:auto;padding:0.75rem 2rem;">Browse Products</a>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/payment/instructions/${orderId}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load payment instructions');
+                }
+
+                const instructions = data.paymentInstructions;
+                const order = data.order;
+                const bank = instructions.bankDetails;
+
+                container.innerHTML = `
+                    <div class="payment-header">
+                        <i class="fas fa-university" style="font-size:3rem;color:var(--primary);margin-bottom:0.5rem;"></i>
+                        <h1>Payment Instructions</h1>
+                        <p>Please complete your bank transfer within 48 hours</p>
+                    </div>
+
+                    <div class="order-summary">
+                        <div class="row"><span>Order ID</span><span><strong>#${order.id}</strong></span></div>
+                        <div class="row"><span>Total Amount</span><span><strong>€${order.total.toFixed(2)}</strong></span></div>
+                        <div class="row"><span>Status</span><span>⏳ Pending Payment</span></div>
+                    </div>
+
+                    <h3 style="margin-top:1.5rem;">Bank Transfer Details</h3>
+                    <div class="bank-details">
+                        <div class="detail-row">
+                            <span class="label">Bank Name</span>
+                            <span class="value">${bank.bankName}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Account Name</span>
+                            <span class="value">${bank.accountName}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Account Number</span>
+                            <span class="value">${bank.accountNumber}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">IBAN</span>
+                            <span class="value important">
+                                ${bank.iban}
+                                <button class="copy-btn" onclick="copyIBAN('${bank.iban}')">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">SWIFT / BIC</span>
+                            <span class="value">${bank.swift}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Currency</span>
+                            <span class="value">${bank.currency}</span>
+                        </div>
+                        <div class="detail-row" style="border-top:2px solid var(--primary);padding-top:0.75rem;margin-top:0.5rem;">
+                            <span class="label" style="color:var(--primary);">Reference</span>
+                            <span class="value important">${bank.reference}</span>
+                        </div>
+                    </div>
+
+                    <div style="background:#fef3c7;padding:0.75rem 1rem;border-radius:8px;margin:1rem 0;border:1px solid #fde68a;">
+                        <p style="font-weight:600;color:#92400e;">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            Important: Use the reference above when making the transfer
+                        </p>
+                    </div>
+
+                    <h3 style="margin-top:1.5rem;">How to Complete Your Payment</h3>
+                    <ol class="payment-steps">
+                        ${instructions.instructions.steps.map(step => `<li>${step}</li>`).join('')}
+                    </ol>
+
+                    <div style="background:#f0fdf4;padding:0.75rem 1rem;border-radius:8px;margin:1rem 0;border:1px solid #bbf7d0;">
+                        <p style="color:#166534;font-size:0.9rem;">
+                            <i class="fas fa-clock"></i> 
+                            Your order will be processed within 24 hours of payment confirmation
+                        </p>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;">
+                        <a href="profile.html" class="btn btn-primary" style="justify-content:center;">
+                            <i class="fas fa-user"></i> View Orders
+                        </a>
+                        <a href="products.html" class="btn btn-outline" style="justify-content:center;">
+                            <i class="fas fa-arrow-left"></i> Continue Shopping
+                        </a>
+                    </div>
+
+                    <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #e2e8f0;text-align:center;font-size:0.85rem;color:#94a3b8;">
+                        <p>Questions? Contact us at <a href="mailto:support@ormidia.com" style="color:var(--primary);">support@ormidia.com</a></p>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading payment instructions:', error);
+                container.innerHTML = `
+                    <div style="text-align:center;padding:2rem;">
+                        <i class="fas fa-exclamation-circle" style="font-size:3rem;color:#E30613;display:block;margin-bottom:1rem;"></i>
+                        <h2>Error Loading Payment</h2>
+                        <p>${error.message || 'Please try again or contact support.'}</p>
+                        <a href="profile.html" class="btn btn-primary" style="margin-top:1rem;width:auto;padding:0.75rem 2rem;">View My Orders</a>
+                    </div>
+                `;
+            }
+        }
+
+        window.copyIBAN = function(iban) {
+            navigator.clipboard.writeText(iban).then(() => {
+                showToast('✅ IBAN copied to clipboard!');
+            }).catch(() => {
+                // Fallback
+                const textArea = document.createElement('textarea');
+                textArea.value = iban;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('✅ IBAN copied to clipboard!');
+            });
+        };
+
+        // Load on page load
+        document.addEventListener('DOMContentLoaded', loadPaymentInstructions);
+    })();
+</script>
+</body>
+</html>

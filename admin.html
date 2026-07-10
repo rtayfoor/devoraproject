@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ORMIDIA Database Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f5f7fa;
+      padding: 20px;
+    }
+    .header {
+      background: #1e293b;
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+    }
+    .sidebar {
+      width: 250px;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .sidebar h3 {
+      color: #E30613;
+      margin-bottom: 15px;
+    }
+    .table-list {
+      list-style: none;
+    }
+    .table-list li {
+      padding: 10px;
+      margin-bottom: 5px;
+      background: #f8fafc;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .table-list li:hover {
+      background: #E30613;
+      color: white;
+    }
+    .table-list li.active {
+      background: #E30613;
+      color: white;
+    }
+    .content {
+      flex: 1;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-primary {
+      background: #E30613;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #b80510;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+    }
+    tr:hover {
+      background: #fef9f5;
+    }
+    .actions i {
+      margin: 0 5px;
+      cursor: pointer;
+    }
+    .edit { color: #3b82f6; }
+    .delete { color: #E30613; }
+    .sql-box {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+    textarea {
+      width: 100%;
+      font-family: monospace;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      width: 500px;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .modal-content input {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #1e293b;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      z-index: 1100;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1>📊 ORMIDIA Database Admin</h1>
+  <p>Managing: <strong id="dbName">ormidia_products</strong></p>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <h3>📋 Tables</h3>
+    <ul class="table-list" id="tableList">
+      <li>Loading...</li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <div class="toolbar">
+      <h3 id="currentTableTitle">Select a table</h3>
+      <button class="btn-primary" id="insertBtn" style="display:none">+ Insert Row</button>
+    </div>
+    <div id="dataDisplay" class="loading">Click a table from the left</div>
+
+    <div class="sql-box">
+      <h4>🔧 Custom SQL Query</h4>
+      <textarea id="sqlInput" rows="3" placeholder="SELECT * FROM products"></textarea>
+      <button class="btn-primary" id="runSql">Execute</button>
+      <div id="sqlOutput" style="margin-top: 10px;"></div>
+    </div>
+  </div>
+</div>
+
+<div id="insertModal" class="modal">
+  <div class="modal-content">
+    <h3>Insert New Row</h3>
+    <div id="insertForm"></div>
+    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;">
+      <button onclick="closeModal('insertModal')">Cancel</button>
+      <button class="btn-primary" id="doInsert">Insert</button>
+    </div>
+  </div>
+</div>
+
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h3>Edit Row</h3>
+    <div id="editForm"></div>
+    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;">
+      <button onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn-primary" id="doEdit">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentTable = null;
+let currentColumns = [];
+let currentRows = [];
+let currentIdColumn = 'id';
+let editingId = null;
+
+async function fetchAPI(endpoint, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(endpoint, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+function showMessage(msg, isError = false) {
+  let toast = document.querySelector('.toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.style.background = isError ? '#dc2626' : '#10b981';
+  toast.innerHTML = msg;
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display = 'none', 3000);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+async function loadTables() {
+  try {
+    const data = await fetchAPI('/api/tables');
+    const container = document.getElementById('tableList');
+    if (data.tables.length === 0) {
+      container.innerHTML = '<li>No tables found</li>';
+      return;
+    }
+    container.innerHTML = data.tables.map(t => `<li onclick="loadTable('${t}')">📄 ${t}</li>`).join('');
+    showMessage(`Loaded ${data.tables.length} tables`);
+  } catch (err) {
+    document.getElementById('tableList').innerHTML = `<li>Error: ${err.message}</li>`;
+    showMessage(err.message, true);
+  }
+}
+
+async function loadTable(tableName) {
+  currentTable = tableName;
+  document.getElementById('currentTableTitle').innerHTML = `📊 ${tableName}`;
+  document.getElementById('insertBtn').style.display = 'inline-block';
+  
+  document.querySelectorAll('.table-list li').forEach(li => {
+    li.classList.remove('active');
+    if (li.textContent.includes(tableName)) li.classList.add('active');
+  });
+  
+  try {
+    const data = await fetchAPI(`/api/data/${tableName}`);
+    currentColumns = data.columns;
+    currentRows = data.rows;
+    currentIdColumn = data.columns.find(c => c.column_name === 'id')?.column_name || data.columns[0]?.column_name;
+    renderData(data);
+  } catch (err) {
+    document.getElementById('dataDisplay').innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+    showMessage(err.message, true);
+  }
+}
+
+function renderData(data) {
+  if (!data.columns.length) {
+    document.getElementById('dataDisplay').innerHTML = '<div class="loading">No columns</div>';
+    return;
+  }
+  
+  let html = '<div style="overflow-x: auto;"><table><thead><tr>';
+  data.columns.forEach(col => {
+    html += `<th>${col.column_name}<br><small>${col.data_type}</small></th>`;
+  });
+  html += '<th>Actions</th></tr></thead><tbody>';
+  
+  if (data.rows.length === 0) {
+    html += `<tr><td colspan="${data.columns.length + 1}" style="text-align:center;">No data</td></tr>`;
+  } else {
+    data.rows.forEach(row => {
+      html += '<tr>';
+      data.columns.forEach(col => {
+        let val = row[col.column_name];
+        let display = val === null ? 'NULL' : String(val);
+        if (display.length > 50) display = display.substring(0, 50) + '...';
+        html += `<td title="${String(val)}">${display}</td>`;
+      });
+      const rowId = row[currentIdColumn];
+      html += `<td class="actions">
+        <span class="edit" onclick="openEdit(${rowId})">✏️</span>
+        <span class="delete" onclick="deleteRow(${rowId})">🗑️</span>
+      </td>`;
+      html += '</tr>';
+    });
+  }
+  
+  html += `</tbody></table></div><div style="margin-top:10px;">✅ ${data.count} rows</div>`;
+  document.getElementById('dataDisplay').innerHTML = html;
+}
+
+function openInsert() {
+  const form = document.getElementById('insertForm');
+  form.innerHTML = currentColumns.map(col => {
+    if (col.column_name === currentIdColumn && col.data_type.includes('int')) return '';
+    return `<label><strong>${col.column_name}</strong> (${col.data_type})</label>
+            <input type="text" id="ins_${col.column_name}" placeholder="Enter value">`;
+  }).join('');
+  document.getElementById('insertModal').classList.add('active');
+}
+
+async function doInsert() {
+  const newRow = {};
+  for (let col of currentColumns) {
+    if (col.column_name === currentIdColumn && col.data_type.includes('int')) continue;
+    const val = document.getElementById(`ins_${col.column_name}`)?.value;
+    if (val && val.trim()) newRow[col.column_name] = val;
+  }
+  
+  try {
+    await fetchAPI(`/api/data/${currentTable}`, 'POST', { row: newRow });
+    showMessage('Row inserted');
+    closeModal('insertModal');
+    loadTable(currentTable);
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+async function openEdit(rowId) {
+  const row = currentRows.find(r => r[currentIdColumn] == rowId);
+  if (!row) return;
+  editingId = rowId;
+  
+  const form = document.getElementById('editForm');
+  form.innerHTML = currentColumns.map(col => `
+    <label><strong>${col.column_name}</strong></label>
+    <input type="text" id="edit_${col.column_name}" value="${escapeHtml(String(row[col.column_name] || ''))}">
+  `).join('');
+  document.getElementById('editModal').classList.add('active');
+}
+
+async function doEdit() {
+  const updatedRow = {};
+  for (let col of currentColumns) {
+    updatedRow[col.column_name] = document.getElementById(`edit_${col.column_name}`)?.value || null;
+  }
+  
+  try {
+    await fetchAPI(`/api/data/${currentTable}/${editingId}`, 'PUT', { 
+      row: updatedRow, 
+      idColumn: currentIdColumn 
+    });
+    showMessage('Row updated');
+    closeModal('editModal');
+    loadTable(currentTable);
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+async function deleteRow(rowId) {
+  if (!confirm('Delete this row permanently?')) return;
+  try {
+    await fetchAPI(`/api/data/${currentTable}/${rowId}`, 'DELETE', { idColumn: currentIdColumn });
+    showMessage('Row deleted');
+    loadTable(currentTable);
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+async function runQuery() {
+  const sql = document.getElementById('sqlInput').value.trim();
+  if (!sql) {
+    showMessage('Enter a SQL query', true);
+    return;
+  }
+  
+  try {
+    const data = await fetchAPI('/api/query', 'POST', { sql });
+    const output = document.getElementById('sqlOutput');
+    
+    if (data.rows && data.rows.length > 0) {
+      const cols = Object.keys(data.rows[0]);
+      let html = '<div style="overflow-x: auto; max-height: 300px; overflow-y: auto;"><table style="font-size:12px;"><thead><tr>';
+      cols.forEach(c => html += `<th>${c}</th>`);
+      html += '</tr></thead><tbody>';
+      data.rows.forEach(row => {
+        html += '<tr>';
+        cols.forEach(c => {
+          let val = row[c];
+          let display = val === null ? 'NULL' : String(val);
+          if (display.length > 40) display = display.substring(0, 40) + '...';
+          html += `<td>${escapeHtml(display)}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += `</tbody></table></div><div>✅ ${data.rowCount} rows</div>`;
+      output.innerHTML = html;
+    } else {
+      output.innerHTML = `<div style="background:#e6f7e6; padding:10px;">✅ Query executed. ${data.rowCount || 0} rows affected.</div>`;
+    }
+  } catch (err) {
+    document.getElementById('sqlOutput').innerHTML = `<div style="background:#fee2e2; padding:10px; color:#E30613;">❌ Error: ${err.message}</div>`;
+  }
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
+// Setup event listeners
+document.getElementById('insertBtn').addEventListener('click', openInsert);
+document.getElementById('doInsert').addEventListener('click', doInsert);
+document.getElementById('doEdit').addEventListener('click', doEdit);
+document.getElementById('runSql').addEventListener('click', runQuery);
+
+// Load everything
+loadTables();
+</script>
+</body>
+</html>

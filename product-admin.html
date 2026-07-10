@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORMIDIA - Product & Variants Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header h1 { font-size: 1.8rem; display: flex; align-items: center; gap: 12px; }
+        .header h1 i { color: #E30613; }
+        .connection-status {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-connected { color: #10b981; }
+        .status-error { color: #ef4444; }
+        
+        .admin-main { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
+        
+        .sidebar {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        .sidebar-section { margin-bottom: 24px; }
+        .sidebar-section h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .product-list, .table-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .product-list li, .table-list li {
+            padding: 12px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            border: 1px solid #e2e8f0;
+        }
+        .product-list li:hover, .table-list li:hover { background: #f1f5f9; border-color: #E30613; }
+        .product-list li.active, .table-list li.active { background: #E30613; color: white; border-color: #E30613; }
+        
+        .content-area {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #e2e8f0;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary { background: #E30613; color: white; }
+        .btn-primary:hover { background: #b80510; transform: translateY(-1px); }
+        .btn-secondary { background: #f1f5f9; color: #1e293b; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        .btn-danger { background: #fee2e2; color: #E30613; }
+        
+        .table-wrapper { overflow-x: auto; margin-top: 20px; }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 12px;
+            background: #f8fafc;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .data-table tr:hover { background: #fef9f5; }
+        .actions { display: flex; gap: 8px; }
+        .btn-edit { background: #3b82f6; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-delete { background: #E30613; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 { margin-bottom: 20px; }
+        .modal-content input, .modal-content select, .modal-content textarea {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 1100;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .loading { text-align: center; padding: 40px; color: #64748b; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-brand { background: #dbeafe; color: #1e40af; }
+        .badge-color { background: #fef3c7; color: #92400e; }
+        
+        @media (max-width: 768px) {
+            .admin-main { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-box"></i> ORMIDIA - Product Manager</h1>
+            <div class="connection-status" id="connectionStatus">
+                <i class="fas fa-circle"></i> <span>Connecting...</span>
+            </div>
+        </div>
+
+        <div class="admin-main">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-box"></i> Products</h3>
+                    <ul class="product-list" id="productList">
+                        <li>Loading products...</li>
+                    </ul>
+                    <button class="btn btn-primary" style="width:100%; margin-top:12px;" id="addProductBtn">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-database"></i> Tables</h3>
+                    <ul class="table-list" id="tableList">
+                        <li onclick="window.switchTable('products')"><i class="fas fa-table"></i> products</li>
+                        <li onclick="window.switchTable('product_variants')"><i class="fas fa-tags"></i> product_variants</li>
+                        <li onclick="window.switchTable('users')"><i class="fas fa-users"></i> users</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <div class="content-header">
+                    <h2 id="currentViewTitle"><i class="fas fa-table"></i> Select a table</h2>
+                    <button class="btn btn-secondary" id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+                <div id="contentDisplay">
+                    <div class="loading"><i class="fas fa-database"></i> Select a product or table from the sidebar</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <h3 id="productModalTitle">Add Product</h3>
+            <input type="text" id="productName" placeholder="Product Name">
+            <textarea id="productDesc" rows="3" placeholder="Description"></textarea>
+            <input type="number" id="productPrice" step="0.01" placeholder="Base Price (€)">
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="window.closeModal('productModal')">Cancel</button>
+                <button class="btn btn-primary" id="saveProductBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="variantModal" class="modal">
+        <div class="modal-content">
+            <h3>Add Variant</h3>
+            <input type="text" id="variantName" placeholder="Variant name (e.g., BMW, Red, 2pcs)">
+            <select id="variantType">
+                <option value="brand">Brand</option>
+                <option value="color">Color</option>
+                <option value="size">Size</option>
+                <option value="pack">Pack Option</option>
+                <option value="option">Other Option</option>
+            </select>
+            <input type="number" id="variantPrice" step="0.01" placeholder="Price (€)">
+            <input type="text" id="variantSku" placeholder="SKU (optional)">
+            <input type="number" id="variantStock" placeholder="Stock quantity">
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="window.closeModal('variantModal')">Cancel</button>
+                <button class="btn btn-primary" id="saveVariantBtn">Save Variant</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editVariantModal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Variant</h3>
+            <div id="editVariantForm"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="window.closeModal('editVariantModal')">Cancel</button>
+                <button class="btn btn-primary" id="updateVariantBtn">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editProductModal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Product</h3>
+            <input type="text" id="editProductName" placeholder="Product Name">
+            <textarea id="editProductDesc" rows="3" placeholder="Description"></textarea>
+            <input type="number" id="editProductPrice" step="0.01" placeholder="Base Price (€)">
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="window.closeModal('editProductModal')">Cancel</button>
+                <button class="btn btn-primary" id="updateProductBtn">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ===== SUPABASE CONFIGURATION =====
+        // ⚠️ REPLACE WITH YOUR ACTUAL CREDENTIALS! ⚠️
+        const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';  // ← PASTE YOUR PUBLISHABLE KEY HERE
+        
+        // Use a unique variable name to avoid conflicts
+        let supabaseClient = null;
+        let currentTable = 'products';
+        let currentProductId = null;
+        let currentVariants = [];
+        let editingVariantId = null;
+        let currentProductForVariant = null;
+        
+        function showToast(message, isError = false) {
+            let toast = document.querySelector('.toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.className = 'toast';
+                document.body.appendChild(toast);
+            }
+            toast.style.background = isError ? '#E30613' : '#10b981';
+            toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${message}`;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+        
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return 'NULL';
+            return String(str).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        async function initSupabase() {
+            const statusDiv = document.getElementById('connectionStatus');
+            
+            if (SUPABASE_ANON_KEY.includes('YOUR_ANON_KEY')) {
+                statusDiv.innerHTML = '<i class="fas fa-circle status-error"></i><span> ⚠️ Update SUPABASE_ANON_KEY in the script!</span>';
+                showToast('Please update your Supabase publishable key in the code', true);
+                return;
+            }
+            
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            try {
+                const { error } = await supabaseClient.from('products').select('count', { count: 'exact', head: true });
+                if (error && error.code !== '42P01') throw error;
+                
+                statusDiv.innerHTML = '<i class="fas fa-circle status-connected"></i><span> Connected to Supabase</span>';
+                showToast('Connected to Supabase!');
+                loadProducts();
+            } catch (err) {
+                statusDiv.innerHTML = '<i class="fas fa-circle status-error"></i><span> Error: ' + err.message + '</span>';
+                showToast('Connection failed: ' + err.message, true);
+            }
+        }
+        
+        async function loadProducts() {
+            const productList = document.getElementById('productList');
+            productList.innerHTML = '<li><i class="fas fa-spinner fa-spin"></i> Loading...</li>';
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('id, name, base_price')
+                    .order('id');
+                
+                if (error) throw error;
+                
+                if (data.length === 0) {
+                    productList.innerHTML = '<li style="color:#64748b;">No products yet. Click "Add Product"</li>';
+                    return;
+                }
+                
+                productList.innerHTML = data.map(product => `
+                    <li onclick="window.selectProduct(${product.id}, '${escapeHtml(product.name)}')">
+                        <i class="fas fa-box"></i> ${escapeHtml(product.name)}
+                        <span style="font-size:0.7rem; color:#64748b; margin-left:auto;">€${product.base_price}</span>
+                    </li>
+                `).join('');
+                
+            } catch (err) {
+                productList.innerHTML = '<li style="color:#E30613;">Error loading products</li>';
+            }
+        }
+        
+        window.selectProduct = async function(productId, productName) {
+            currentProductId = productId;
+            currentTable = 'product_variants';
+            
+            document.querySelectorAll('.product-list li').forEach(li => li.classList.remove('active'));
+            if (event?.target) {
+                const li = event.target.closest('li');
+                if (li) li.classList.add('active');
+            }
+            
+            document.getElementById('currentViewTitle').innerHTML = `
+                <i class="fas fa-tags"></i> Variants for: ${escapeHtml(productName)}
+                <button class="btn btn-primary" style="margin-left: 15px;" onclick="window.showAddVariantModal(${productId})">
+                    <i class="fas fa-plus"></i> Add Variant
+                </button>
+            `;
+            
+            await loadVariants(productId);
+        }
+        
+        async function loadVariants(productId) {
+            const contentDiv = document.getElementById('contentDisplay');
+            contentDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading variants...</div>';
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('product_variants')
+                    .select('*')
+                    .eq('product_id', productId)
+                    .order('variant_type', { ascending: true });
+                
+                if (error) throw error;
+                
+                currentVariants = data || [];
+                renderVariants();
+                
+            } catch (err) {
+                contentDiv.innerHTML = `<div class="loading" style="color:#E30613;">Error: ${err.message}</div>`;
+            }
+        }
+        
+        function renderVariants() {
+            const contentDiv = document.getElementById('contentDisplay');
+            
+            if (currentVariants.length === 0) {
+                contentDiv.innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-info-circle"></i> No variants for this product.
+                        <button class="btn btn-primary" style="display: block; margin: 20px auto 0;" onclick="window.showAddVariantModal(${currentProductId})">
+                            <i class="fas fa-plus"></i> Add First Variant
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Variant Name</th>
+                                <th>Type</th>
+                                <th>Price (€)</th>
+                                <th>SKU</th>
+                                <th>Stock</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            currentVariants.forEach(variant => {
+                const typeClass = variant.variant_type === 'brand' ? 'badge-brand' : 
+                                 (variant.variant_type === 'color' ? 'badge-color' : '');
+                html += `
+                    <tr>
+                        <td><strong>${escapeHtml(variant.variant_name)}</strong></td>
+                        <td><span class="badge ${typeClass}">${escapeHtml(variant.variant_type || '—')}</span></td>
+                        <td>€${variant.price}</td>
+                        <td><code>${escapeHtml(variant.sku || '—')}</code></td>
+                        <td>${variant.stock_quantity ?? '—'}</td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="window.showEditVariantModal(${variant.id})">✏️ Edit</button>
+                            <button class="btn-delete" onclick="window.deleteVariant(${variant.id})">🗑️ Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table></div>
+                     <div style="margin-top: 12px; color:#64748b;">${currentVariants.length} variants total</div>`;
+            
+            contentDiv.innerHTML = html;
+        }
+        
+        window.showAddVariantModal = function(productId) {
+            currentProductForVariant = productId;
+            document.getElementById('variantName').value = '';
+            document.getElementById('variantPrice').value = '';
+            document.getElementById('variantSku').value = '';
+            document.getElementById('variantStock').value = '';
+            document.getElementById('variantModal').classList.add('active');
+        }
+        
+        async function saveVariant() {
+            const variantName = document.getElementById('variantName').value.trim();
+            const variantType = document.getElementById('variantType').value;
+            const price = parseFloat(document.getElementById('variantPrice').value);
+            const sku = document.getElementById('variantSku').value.trim();
+            const stock = parseInt(document.getElementById('variantStock').value) || 0;
+            
+            if (!variantName || !price) {
+                showToast('Please fill variant name and price', true);
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('product_variants')
+                    .insert([{
+                        product_id: currentProductForVariant,
+                        variant_name: variantName,
+                        variant_type: variantType,
+                        price: price,
+                        sku: sku || null,
+                        stock_quantity: stock
+                    }]);
+                
+                if (error) throw error;
+                
+                showToast('Variant added successfully!');
+                window.closeModal('variantModal');
+                await loadVariants(currentProductId);
+                await loadProducts();
+                
+            } catch (err) {
+                showToast('Error: ' + err.message, true);
+            }
+        }
+        
+        window.showEditVariantModal = async function(variantId) {
+            const variant = currentVariants.find(v => v.id === variantId);
+            if (!variant) return;
+            
+            editingVariantId = variantId;
+            
+            const form = document.getElementById('editVariantForm');
+            form.innerHTML = `
+                <label><strong>Variant Name</strong></label>
+                <input type="text" id="edit_variant_name" value="${escapeHtml(variant.variant_name || '')}">
+                <label><strong>Type</strong></label>
+                <select id="edit_variant_type">
+                    <option value="brand" ${variant.variant_type === 'brand' ? 'selected' : ''}>Brand</option>
+                    <option value="color" ${variant.variant_type === 'color' ? 'selected' : ''}>Color</option>
+                    <option value="size" ${variant.variant_type === 'size' ? 'selected' : ''}>Size</option>
+                    <option value="pack" ${variant.variant_type === 'pack' ? 'selected' : ''}>Pack Option</option>
+                    <option value="option" ${variant.variant_type === 'option' ? 'selected' : ''}>Other Option</option>
+                </select>
+                <label><strong>Price (€)</strong></label>
+                <input type="number" id="edit_variant_price" step="0.01" value="${variant.price}">
+                <label><strong>SKU</strong></label>
+                <input type="text" id="edit_variant_sku" value="${escapeHtml(variant.sku || '')}">
+                <label><strong>Stock</strong></label>
+                <input type="number" id="edit_variant_stock" value="${variant.stock_quantity || 0}">
+            `;
+            document.getElementById('editVariantModal').classList.add('active');
+        }
+        
+        async function updateVariant() {
+            const updatedData = {
+                variant_name: document.getElementById('edit_variant_name').value,
+                variant_type: document.getElementById('edit_variant_type').value,
+                price: parseFloat(document.getElementById('edit_variant_price').value),
+                sku: document.getElementById('edit_variant_sku').value || null,
+                stock_quantity: parseInt(document.getElementById('edit_variant_stock').value) || 0
+            };
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('product_variants')
+                    .update(updatedData)
+                    .eq('id', editingVariantId);
+                
+                if (error) throw error;
+                
+                showToast('Variant updated!');
+                window.closeModal('editVariantModal');
+                await loadVariants(currentProductId);
+                
+            } catch (err) {
+                showToast('Error: ' + err.message, true);
+            }
+        }
+        
+        window.deleteVariant = async function(variantId) {
+            if (!confirm('Delete this variant permanently?')) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('product_variants')
+                    .delete()
+                    .eq('id', variantId);
+                
+                if (error) throw error;
+                
+                showToast('Variant deleted');
+                await loadVariants(currentProductId);
+                
+            } catch (err) {
+                showToast('Error: ' + err.message, true);
+            }
+        }
+        
+        async function addProduct() {
+            const name = document.getElementById('productName').value.trim();
+            const description = document.getElementById('productDesc').value.trim();
+            const price = parseFloat(document.getElementById('productPrice').value);
+            
+            if (!name || !price) {
+                showToast('Please fill product name and price', true);
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .insert([{ name, description, base_price: price }])
+                    .select();
+                
+                if (error) throw error;
+                
+                showToast('Product added!');
+                window.closeModal('productModal');
+                
+                document.getElementById('productName').value = '';
+                document.getElementById('productDesc').value = '';
+                document.getElementById('productPrice').value = '';
+                
+                await loadProducts();
+                
+                if (data && data[0]) {
+                    window.selectProduct(data[0].id, data[0].name);
+                }
+                
+            } catch (err) {
+                showToast('Error: ' + err.message, true);
+            }
+        }
+        
+        function showAddProductModal() {
+            document.getElementById('productModalTitle').innerText = 'Add Product';
+            document.getElementById('productName').value = '';
+            document.getElementById('productDesc').value = '';
+            document.getElementById('productPrice').value = '';
+            document.getElementById('productModal').classList.add('active');
+        }
+        
+        window.switchTable = async function(tableName) {
+            currentTable = tableName;
+            currentProductId = null;
+            
+            document.querySelectorAll('.table-list li').forEach(li => li.classList.remove('active'));
+            if (event?.target) event.target.classList.add('active');
+            
+            document.getElementById('currentViewTitle').innerHTML = `<i class="fas fa-table"></i> Table: ${tableName}`;
+            
+            const contentDiv = document.getElementById('contentDisplay');
+            contentDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from(tableName)
+                    .select('*')
+                    .limit(100);
+                
+                if (error) throw error;
+                
+                if (!data || data.length === 0) {
+                    contentDiv.innerHTML = '<div class="loading">No data in this table</div>';
+                    return;
+                }
+                
+                const columns = Object.keys(data[0]);
+                let html = '<div class="table-wrapper"><table class="data-table"><thead><tr>';
+                columns.forEach(col => html += `<th>${col}</th>`);
+                html += '<th>Actions</th></tr></thead><tbody>';
+                
+                data.forEach(row => {
+                    const rowId = row.id;
+                    html += '<tr>';
+                    columns.forEach(col => {
+                        let val = row[col];
+                        let display = val === null ? 'NULL' : String(val);
+                        if (display.length > 50) display = display.substring(0, 50) + '...';
+                        html += `<td title="${escapeHtml(String(val))}">${escapeHtml(display)}</td>`;
+                    });
+                    html += `<td><button class="btn-delete" onclick="window.deleteTableRow('${tableName}', ${rowId})">🗑️ Delete</button></td>`;
+                    html += '</tr>';
+                });
+                
+                html += '</tbody></table></div>';
+                contentDiv.innerHTML = html;
+                
+            } catch (err) {
+                contentDiv.innerHTML = `<div class="loading" style="color:#E30613;">Error: ${err.message}</div>`;
+            }
+        };
+        
+        window.deleteTableRow = async function(tableName, rowId) {
+            if (!confirm(`Delete this row from ${tableName}?`)) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from(tableName)
+                    .delete()
+                    .eq('id', rowId);
+                
+                if (error) throw error;
+                
+                showToast('Row deleted');
+                window.switchTable(tableName);
+                if (tableName === 'products') loadProducts();
+                
+            } catch (err) {
+                showToast('Error: ' + err.message, true);
+            }
+        };
+        
+        function refreshData() {
+            if (currentProductId) {
+                loadVariants(currentProductId);
+            } else if (currentTable === 'products') {
+                loadProducts();
+            } else if (currentTable) {
+                window.switchTable(currentTable);
+            }
+        }
+        
+        document.getElementById('addProductBtn').onclick = showAddProductModal;
+        document.getElementById('saveProductBtn').onclick = addProduct;
+        document.getElementById('saveVariantBtn').onclick = saveVariant;
+        document.getElementById('updateVariantBtn').onclick = updateVariant;
+        document.getElementById('refreshBtn').onclick = refreshData;
+        
+        initSupabase();
+    </script>
+</body>
+</html>

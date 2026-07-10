@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORMIDIA - Supabase Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header h1 { font-size: 1.8rem; display: flex; align-items: center; gap: 12px; }
+        .header h1 i { color: #E30613; }
+        .connection-status {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-connected { color: #10b981; }
+        .status-error { color: #ef4444; }
+        .admin-main { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
+        .sidebar {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        .sidebar-section { margin-bottom: 24px; }
+        .sidebar-section h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+        .table-list { list-style: none; }
+        .table-list li {
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+        .table-list li:hover { background: #f1f5f9; border-color: #E30613; }
+        .table-list li.active { background: #E30613; color: white; }
+        .content-area {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary { background: #E30613; color: white; }
+        .btn-primary:hover { background: #b80510; }
+        .btn-secondary { background: #f1f5f9; color: #1e293b; }
+        .table-wrapper { overflow-x: auto; margin-top: 20px; }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 12px;
+            background: #f8fafc;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .data-table tr:hover { background: #fef9f5; }
+        .btn-delete { background: #E30613; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; }
+        .loading { text-align: center; padding: 40px; color: #64748b; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 1100;
+        }
+        @media (max-width: 768px) {
+            .admin-main { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-database"></i> ORMIDIA Database Admin</h1>
+            <div class="connection-status" id="connectionStatus">
+                <i class="fas fa-circle"></i> <span>Connecting...</span>
+            </div>
+        </div>
+
+        <div class="admin-main">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-table"></i> Tables</h3>
+                    <ul class="table-list" id="tableList"></ul>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <div class="content-header">
+                    <h2 id="currentViewTitle"><i class="fas fa-table"></i> Select a table</h2>
+                    <button class="btn btn-secondary" id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+                <div id="contentDisplay">
+                    <div class="loading"><i class="fas fa-database"></i> Select a table from the sidebar</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ===== SUPABASE CONFIGURATION =====
+        // ⚠️ REPLACE WITH YOUR ACTUAL CREDENTIALS! ⚠️
+        const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';  // ← PASTE YOUR PUBLISHABLE KEY HERE
+        
+        let supabaseClient = null;
+        let currentTable = null;
+        
+        function showToast(message, isError = false) {
+            let toast = document.querySelector('.toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.className = 'toast';
+                document.body.appendChild(toast);
+            }
+            toast.style.background = isError ? '#E30613' : '#10b981';
+            toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${message}`;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+        
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return 'NULL';
+            return String(str).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        async function initSupabase() {
+            const statusDiv = document.getElementById('connectionStatus');
+            
+            if (SUPABASE_ANON_KEY.includes('YOUR_ANON_KEY')) {
+                statusDiv.innerHTML = '<i class="fas fa-circle status-error"></i><span> ⚠️ Update SUPABASE_ANON_KEY in the script!</span>';
+                showToast('Please update your Supabase publishable key', true);
+                return;
+            }
+            
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            try {
+                const { error } = await supabaseClient.from('products').select('count', { count: 'exact', head: true });
+                if (error && error.code !== '42P01') throw error;
+                
+                statusDiv.innerHTML = '<i class="fas fa-circle status-connected"></i><span> Connected to Supabase</span>';
+                showToast('Connected to Supabase!');
+                loadTables();
+            } catch (err) {
+                statusDiv.innerHTML = '<i class="fas fa-circle status-error"></i><span> Error: ' + err.message + '</span>';
+                showToast('Connection failed: ' + err.message, true);
+            }
+        }
+        
+        async function loadTables() {
+            const tableList = document.getElementById('tableList');
+            tableList.innerHTML = '<li><i class="fas fa-spinner fa-spin"></i> Loading...</li>';
+            
+            // Your existing tables
+            const tables = ['products', 'product_variants', 'users'];
+            
+            tableList.innerHTML = tables.map(table => `
+                <li onclick="selectTable('${table}')">
+                    <i class="fas fa-table"></i> ${table}
+                </li>
+            `).join('');
+        }
+        
+        window.selectTable = async function(tableName) {
+            currentTable = tableName;
+            
+            document.querySelectorAll('.table-list li').forEach(li => li.classList.remove('active'));
+            if (event?.target) event.target.classList.add('active');
+            
+            document.getElementById('currentViewTitle').innerHTML = `<i class="fas fa-table"></i> Table: ${tableName}`;
+            
+            const contentDiv = document.getElementById('contentDisplay');
+            contentDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from(tableName)
+                    .select('*')
+                    .limit(100);
+                
+                if (error) throw error;
+                
+                if (!data || data.length === 0) {
+                    contentDiv.innerHTML = '<div class="loading">No data in this table</div>';
+                    return;
+                }
+                
+                const columns = Object.keys(data[0]);
+                let html = '<div class="table-wrapper"><table class="data-table"><thead><tr>';
+                columns.forEach(col => html += `<th>${col}</th>`);
+                html += '<th>Actions</th></tr></thead><tbody>';
+                
+                data.forEach(row => {
+                    const rowId = row.id;
+                    html += '<tr>';
+                    columns.forEach(col => {
+                        let val = row[col];
+                        let display = val === null ? 'NULL' : String(val);
+                        if (display.length > 50) display = display.substring(0, 50) + '...';
+                        html += `<td title="${escapeHtml(String(val))}">${escapeHtml(display)}</td>`;
+                    });
+                    html += `<td><button class="btn-delete" onclick="deleteRow('${tableName}', ${rowId})">🗑️ Delete</button></td>`;
+                    html += '</tr>';
+                });
+                
+                html += '</tbody></table></div>';
+                contentDiv.innerHTML = html;
+                
+            } catch (err) {
+                contentDiv.innerHTML = `<div class="loading" style="color:#E30613;">Error: ${err.message}</div>`;
+            }
+        };
+        
+        window.deleteRow = async function(tableName, rowId) {
+            if (!confirm(`Delete this row from ${tableName}?`)) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from(tableName)
+                    .delete()
+                    .eq('id', rowId);
+                
+                if (error) throw error;
+                
+                showToast('Row deleted');
+                selectTable(tableName);
+                
+            } catch (err) {
+                showToast('Error: ' + err.message, true);
+            }
+        };
+        
+        function refreshData() {
+            if (currentTable) {
+                selectTable(currentTable);
+            }
+        }
+        
+        document.getElementById('refreshBtn').onclick = refreshData;
+        
+        initSupabase();
+    </script>
+</body>
+</html>

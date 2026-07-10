@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Admin | Ormidia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #E30613;
+            --primary-dark: #b80510;
+            --primary-light: #fef5f5;
+            --secondary: #1e293b;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --radius: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+        a { text-decoration: none; color: inherit; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem; }
+
+        .navbar {
+            background: white;
+            padding: 1rem 0;
+            border-bottom: 2px solid var(--primary);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .logo-img { height: 40px; width: 40px; border-radius: 50%; object-fit: cover; }
+        .nav-menu { display: flex; gap: 2rem; list-style: none; }
+        .nav-link { color: #1e293b; text-decoration: none; font-weight: 500; transition: color 0.3s ease; }
+        .nav-link:hover, .nav-link.active { color: var(--primary); }
+        .nav-icons { display: flex; align-items: center; gap: 1rem; }
+        .menu-toggle { display: none; font-size: 1.2rem; cursor: pointer; }
+        @media (max-width: 768px) {
+            .menu-toggle { display: block; }
+            .nav-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                padding: 1rem 1.5rem;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .nav-menu.active { display: flex; }
+        }
+
+        .admin-header {
+            padding: 8rem 0 2rem;
+        }
+        .admin-header h1 {
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .admin-header h1 i { color: var(--primary); }
+        .admin-header .subtitle { color: #64748b; }
+
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+            padding-bottom: 4rem;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+        .sidebar-section { margin-bottom: 1.5rem; }
+        .sidebar-section h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            margin-bottom: 0.75rem;
+        }
+        .table-list { list-style: none; }
+        .table-list li {
+            padding: 0.6rem 0.8rem;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            border: 1px solid transparent;
+        }
+        .table-list li:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+        .table-list li.active {
+            background: var(--primary);
+            color: white;
+        }
+        .table-list li i { width: 20px; }
+
+        .content {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .content-header h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .content-header .actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.5rem 1.2rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-outline { background: white; border: 1px solid #e2e8f0; color: #1e293b; }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-danger { background: #fee2e2; color: #b91c1c; }
+        .btn-danger:hover { background: #fecaca; }
+        .btn-success { background: #dcfce7; color: #166534; }
+        .btn-success:hover { background: #bbf7d0; }
+        .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.75rem; }
+        .btn-warning { background: #fef3c7; color: #92400e; }
+        .btn-warning:hover { background: #fde68a; }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 0.75rem;
+            background: #f8fafc;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .data-table td {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .data-table tr:hover { background: var(--primary-light); }
+        .data-table .actions {
+            display: flex;
+            gap: 0.3rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .data-table .actions button {
+            padding: 0.2rem 0.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .data-table .actions .edit { background: #dbeafe; color: #1d4ed8; }
+        .data-table .actions .edit:hover { background: #bfdbfe; }
+        .data-table .actions .delete { background: #fee2e2; color: #b91c1c; }
+        .data-table .actions .delete:hover { background: #fecaca; }
+        .data-table .actions .status-btn { 
+            background: #e0e7ff; 
+            color: #3730a3; 
+            padding: 0.2rem 0.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .data-table .actions .status-btn:hover { background: #c7d2fe; }
+
+        .null-value { color: #94a3b8; font-style: italic; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .status-badge.pending { background: #fef3c7; color: #92400e; }
+        .status-badge.processing { background: #dbeafe; color: #1e40af; }
+        .status-badge.shipped { background: #e0e7ff; color: #3730a3; }
+        .status-badge.completed { background: #dcfce7; color: #166534; }
+        .status-badge.cancelled { background: #fee2e2; color: #991b1b; }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 3rem;
+        }
+        .loading-spinner i {
+            font-size: 2rem;
+            color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+        .empty-state i { font-size: 3rem; display: block; margin-bottom: 1rem; }
+
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: var(--radius);
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+            animation: modalSlideIn 0.3s ease;
+        }
+        @keyframes modalSlideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-close {
+            float: right;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: color 0.3s ease;
+        }
+        .modal-close:hover { color: var(--primary); }
+        .modal-content h3 { margin-bottom: 1.5rem; }
+        .modal-content .form-group { margin-bottom: 1rem; }
+        .modal-content .form-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+        .modal-content .form-group input,
+        .modal-content .form-group textarea,
+        .modal-content .form-group select {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+        }
+        .modal-content .form-group textarea { resize: vertical; min-height: 60px; }
+        .modal-content .form-group input:focus,
+        .modal-content .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(227,6,19,0.1);
+        }
+        .modal-content .form-group small {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .required-star { color: #E30613; font-weight: 700; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 2100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .auth-error {
+            text-align: center;
+            padding: 3rem;
+        }
+        .auth-error i { font-size: 3rem; color: #E30613; display: block; margin-bottom: 1rem; }
+        .auth-error h2 { color: #1e293b; margin-bottom: 0.5rem; }
+        .auth-error p { color: #64748b; margin-bottom: 1rem; }
+
+        @media (max-width: 768px) {
+            .admin-layout { grid-template-columns: 1fr; }
+            .sidebar { position: static; }
+            .admin-header { padding: 6rem 0 1.5rem; }
+            .data-table td { max-width: 120px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="index.html" class="logo">
+            <img src="logo.jpg" alt="Ormidia" class="logo-img" onerror="this.src='https://via.placeholder.com/40x40?text=O'">
+            Ormidia DB Admin
+        </a>
+        <ul class="nav-menu">
+            <li><a href="index.html" class="nav-link">Home</a></li>
+            <li><a href="products.html" class="nav-link">Products</a></li>
+            <li><a href="database-admin.html" class="nav-link active">Database</a></li>
+        </ul>
+        <div class="nav-icons">
+            <div id="auth-icon">
+                <a href="auth.html"><i class="fas fa-user"></i></a>
+            </div>
+            <div class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Admin Header -->
+<div class="admin-header">
+    <div class="container">
+        <h1><i class="fas fa-database"></i> Database Management</h1>
+        <p class="subtitle">View and manage all tables in your database</p>
+    </div>
+</div>
+
+<!-- Admin Layout -->
+<div class="container">
+    <div class="admin-layout">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h3><i class="fas fa-table"></i> Tables</h3>
+                <ul class="table-list" id="tableList">
+                    <li style="color:#94a3b8;">Loading...</li>
+                </ul>
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;" onclick="openCreateTableModal()">
+                <i class="fas fa-plus"></i> Create Table
+            </button>
+        </div>
+
+        <div class="content">
+            <div class="content-header">
+                <h2 id="currentTableTitle"><i class="fas fa-table"></i> Select a table</h2>
+                <div class="actions">
+                    <button class="btn btn-outline btn-sm" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="openInsertRowModal()" id="insertBtn" style="display:none;">
+                        <i class="fas fa-plus"></i> Insert Row
+                    </button>
+                </div>
+            </div>
+
+            <div id="dataDisplay">
+                <div class="empty-state">
+                    <i class="fas fa-arrow-left"></i>
+                    <p>Select a table from the sidebar to view data</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div id="createTableModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal('createTableModal')">&times;</span>
+        <h3><i class="fas fa-plus-circle"></i> Create New Table</h3>
+        <div class="form-group">
+            <label>Table Name</label>
+            <input type="text" id="newTableName" placeholder="e.g., products">
+        </div>
+        <div class="form-group">
+            <label>Columns (one per line: name type)</label>
+            <textarea id="newTableColumns" rows="5" placeholder="id SERIAL PRIMARY KEY&#10;name VARCHAR(100) NOT NULL&#10;price DECIMAL(10,2)&#10;created_at TIMESTAMP DEFAULT NOW()"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('createTableModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="createTable()">Create Table</button>
+        </div>
+    </div>
+</div>
+
+<div id="insertRowModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal('insertRowModal')">&times;</span>
+        <h3><i class="fas fa-plus-circle"></i> Insert Row</h3>
+        <p style="color:#64748b;font-size:0.85rem;margin-bottom:1rem;"><span class="required-star">*</span> Required fields</p>
+        <div id="insertRowFields"></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('insertRowModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="insertRow()">Insert</button>
+        </div>
+    </div>
+</div>
+
+<div id="editRowModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal('editRowModal')">&times;</span>
+        <h3><i class="fas fa-edit"></i> Edit Row</h3>
+        <div id="editRowFields"></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('editRowModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="updateRow()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div id="editOrderStatusModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal('editOrderStatusModal')">&times;</span>
+        <h3><i class="fas fa-truck"></i> Update Order Status</h3>
+        <p style="color:#64748b;font-size:0.85rem;margin-bottom:1rem;">Changing the status will send an email notification to the customer.</p>
+        <div class="form-group">
+            <label>Order ID</label>
+            <input type="text" id="orderStatusOrderId" disabled>
+        </div>
+        <div class="form-group">
+            <label>Customer Email</label>
+            <input type="text" id="orderStatusCustomerEmail" disabled>
+        </div>
+        <div class="form-group">
+            <label>Current Status</label>
+            <input type="text" id="orderStatusCurrentStatus" disabled>
+        </div>
+        <div class="form-group">
+            <label>New Status <span class="required-star">*</span></label>
+            <select id="orderStatusNewStatus">
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Notes (Optional)</label>
+            <textarea id="orderStatusNotes" rows="2" placeholder="Add any notes about this status change..."></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('editOrderStatusModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="updateOrderStatus()">
+                <i class="fas fa-envelope"></i> Update & Send Email
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="confirmDeleteModal" class="modal">
+    <div class="modal-content" style="max-width:400px;">
+        <h3><i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Confirm Delete</h3>
+        <p style="margin:1rem 0;">Are you sure you want to delete this row? This action cannot be undone.</p>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('confirmDeleteModal')">Cancel</button>
+            <button class="btn btn-danger" onclick="confirmDeleteRow()">Delete</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ==========================================
+        // CONFIGURATION
+        // ==========================================
+        let currentTable = null;
+        let currentColumns = [];
+        let currentRows = [];
+        let currentPrimaryKey = 'id';
+        let deleteTarget = null;
+        let editTarget = null;
+        let orderStatusTarget = null;
+        const KNOWN_TABLES = ['products', 'product_variants', 'orders', 'users', 'categories', 'cart_reservations'];
+
+        // ==========================================
+        // GET ADMIN TOKEN
+        // ==========================================
+        function getAdminToken() {
+            return localStorage.getItem('admin_token');
+        }
+
+        function getAdminUser() {
+            try {
+                return JSON.parse(localStorage.getItem('admin_user') || '{}');
+            } catch (e) {
+                return {};
+            }
+        }
+
+        // ==========================================
+        // MODAL HELPERS
+        // ==========================================
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        // ==========================================
+        // AUTH CHECK - ADMIN ONLY
+        // ==========================================
+        async function checkAdminAuth() {
+            const container = document.getElementById('dataDisplay');
+            
+            try {
+                const token = getAdminToken();
+                const adminUser = getAdminUser();
+                
+                if (!token || !adminUser.loggedIn) {
+                    container.innerHTML = `
+                        <div class="auth-error">
+                            <i class="fas fa-lock"></i>
+                            <h2>Admin Access Required</h2>
+                            <p>Please log in with your admin credentials.</p>
+                            <a href="admin-login.html" class="btn btn-primary">Go to Admin Login</a>
+                        </div>
+                    `;
+                    showToast('Admin login required', true);
+                    return false;
+                }
+                
+                const response = await fetch('/api/admin/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.status === 401) {
+                    localStorage.removeItem('admin_token');
+                    localStorage.removeItem('admin_user');
+                    container.innerHTML = `
+                        <div class="auth-error">
+                            <i class="fas fa-lock"></i>
+                            <h2>Session Expired</h2>
+                            <p>Your admin session has expired. Please log in again.</p>
+                            <a href="admin-login.html" class="btn btn-primary">Go to Admin Login</a>
+                        </div>
+                    `;
+                    showToast('Admin session expired. Please log in again.', true);
+                    return false;
+                }
+                
+                if (!response.ok) {
+                    throw new Error('Failed to verify admin status');
+                }
+                
+                const data = await response.json();
+                
+                if (!data.authenticated || !data.isAdmin) {
+                    container.innerHTML = `
+                        <div class="auth-error">
+                            <i class="fas fa-ban" style="color:#e74c3c;"></i>
+                            <h2>Access Denied</h2>
+                            <p>You do not have admin privileges.</p>
+                            <a href="admin-login.html" class="btn btn-primary">Go to Admin Login</a>
+                        </div>
+                    `;
+                    showToast('Access denied. Admin privileges required.', true);
+                    return false;
+                }
+                
+                container.innerHTML = `
+                    <div style="text-align:center;padding:2rem;color:#22c55e;">
+                        <i class="fas fa-check-circle" style="font-size:2rem;"></i>
+                        <p style="margin-top:0.5rem;">✅ Admin access granted</p>
+                        <p style="font-size:0.85rem;color:#94a3b8;">Logged in as: ${adminUser.username || 'Admin'}</p>
+                    </div>
+                `;
+                
+                return true;
+            } catch (error) {
+                console.error('Admin auth check failed:', error);
+                container.innerHTML = `
+                    <div class="auth-error">
+                        <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i>
+                        <h2>Authentication Error</h2>
+                        <p>Failed to verify admin status. Please try again.</p>
+                        <a href="admin-login.html" class="btn btn-primary">Go to Admin Login</a>
+                    </div>
+                `;
+                showToast('Authentication failed. Please try again.', true);
+                return false;
+            }
+        }
+
+        // ==========================================
+        // TOAST NOTIFICATION
+        // ==========================================
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.background = isError ? '#dc2626' : '#1e293b';
+            toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // ==========================================
+        // ESCAPE HTML
+        // ==========================================
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return 'NULL';
+            return String(str).replace(/[&<>"]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                if (m === '"') return '&quot;';
+                return m;
+            });
+        }
+
+        // ==========================================
+        // UPDATE AUTH UI
+        // ==========================================
+        function updateAuthUI() {
+            const authIcon = document.getElementById('auth-icon');
+            if (!authIcon) return;
+            
+            const adminUser = getAdminUser();
+            if (adminUser.loggedIn) {
+                authIcon.innerHTML = `
+                    <span style="display:flex;align-items:center;gap:0.5rem;color:#1e293b;font-weight:600;">
+                        <i class="fas fa-user-shield" style="color:#E30613;"></i>
+                        <span style="font-size:0.9rem;">Admin</span>
+                    </span>
+                `;
+            } else {
+                authIcon.innerHTML = '<a href="auth.html" style="color:#1e293b;font-size:1.2rem;transition:color 0.3s ease;" onmouseover="this.style.color=\'#E30613\'" onmouseout="this.style.color=\'#1e293b\'"><i class="fas fa-user"></i></a>';
+            }
+        }
+
+        // ==========================================
+        // LOAD TABLES
+        // ==========================================
+        async function loadTables() {
+            const container = document.getElementById('tableList');
+            container.innerHTML = '<li style="color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Loading...</li>';
+
+            const token = getAdminToken();
+            if (!token) {
+                container.innerHTML = '<li style="color:#E30613;">Please login first</li>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/tables', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                let tables = data.tables || [];
+                tables = tables.map(t => String(t));
+
+                if (tables.length === 0) {
+                    container.innerHTML = '<li style="color:#94a3b8;">No tables found</li>';
+                    return;
+                }
+
+                container.innerHTML = tables.map(table => `
+                    <li onclick="selectTable('${table}')" data-table="${table}">
+                        <i class="fas fa-table"></i> ${table}
+                    </li>
+                `).join('');
+
+                if (tables.length > 0) {
+                    selectTable(tables[0]);
+                }
+            } catch (e) {
+                console.error('Error loading tables:', e);
+                container.innerHTML = '<li style="color:#E30613;">Error loading tables: ' + e.message + '</li>';
+            }
+        }
+
+        // ==========================================
+        // SELECT TABLE
+        // ==========================================
+        window.selectTable = async function(tableName) {
+            if (typeof tableName !== 'string') {
+                console.error('Invalid table name:', tableName);
+                showToast('Invalid table name', true);
+                return;
+            }
+            
+            tableName = tableName.trim();
+            if (!tableName) {
+                showToast('Table name is required', true);
+                return;
+            }
+            
+            currentTable = tableName;
+            document.querySelectorAll('.table-list li').forEach(el => el.classList.remove('active'));
+            const activeItem = document.querySelector(`.table-list li[data-table="${tableName}"]`);
+            if (activeItem) activeItem.classList.add('active');
+
+            document.getElementById('currentTableTitle').innerHTML = `<i class="fas fa-table"></i> ${tableName}`;
+            document.getElementById('insertBtn').style.display = 'inline-flex';
+
+            const display = document.getElementById('dataDisplay');
+            display.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><p>Loading data...</p></div>';
+
+            const token = getAdminToken();
+            if (!token) {
+                display.innerHTML = '<div class="auth-error"><i class="fas fa-lock"></i><h2>Admin Token Required</h2></div>';
+                return;
+            }
+
+            try {
+                const encodedTableName = encodeURIComponent(tableName);
+                const response = await fetch(`/api/admin/data/${encodedTableName}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    localStorage.removeItem('admin_token');
+                    localStorage.removeItem('admin_user');
+                    display.innerHTML = `
+                        <div class="auth-error">
+                            <i class="fas fa-lock"></i>
+                            <h2>Session Expired</h2>
+                            <p>Please log in again.</p>
+                            <a href="admin-login.html" class="btn btn-primary">Log In</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (response.status === 404) {
+                    display.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-table" style="font-size:3rem;color:#94a3b8;"></i>
+                            <h3 style="margin-top:1rem;">Table "${tableName}" not found</h3>
+                            <p style="color:#64748b;">The table may not exist in your database.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server returned ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+
+                currentRows = data.rows || [];
+                currentColumns = data.columns || [];
+
+                if (currentRows.length === 0 && currentColumns.length === 0) {
+                    currentColumns = [
+                        { name: 'id', data_type: 'integer' },
+                        { name: 'created_at', data_type: 'timestamp' }
+                    ];
+                }
+
+                currentPrimaryKey = currentColumns.find(c => c.name === 'id')?.name || 'id';
+                renderTable(currentColumns, currentRows, tableName);
+
+            } catch (e) {
+                console.error('Error loading table data:', e);
+                display.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle" style="color:#E30613;"></i><p>Error: ${e.message}</p></div>`;
+            }
+        };
+
+        // ==========================================
+        // RENDER TABLE
+        // ==========================================
+        function renderTable(columns, rows, tableName) {
+            const display = document.getElementById('dataDisplay');
+
+            if (!columns || columns.length === 0) {
+                display.innerHTML = '<div class="empty-state"><i class="fas fa-table"></i><p>No columns found</p></div>';
+                return;
+            }
+
+            let html = `<div class="table-wrapper"><table class="data-table"><thead><tr>`;
+
+            columns.forEach(col => {
+                const colName = col.name || col.column_name;
+                const colType = col.type || col.data_type;
+                html += `<th>${escapeHtml(colName)}<br><span style="font-weight:400;color:#94a3b8;font-size:0.7rem;">${escapeHtml(colType)}</span></th>`;
+            });
+            html += `<th style="width:180px;text-align:center;">Actions</th></tr></thead><tbody>`;
+
+            if (rows.length === 0) {
+                html += `<tr><td colspan="${columns.length + 1}" style="text-align:center;padding:2rem;color:#94a3b8;">No data in this table</td></tr>`;
+            } else {
+                rows.forEach(row => {
+                    const rowId = row[currentPrimaryKey] || row.id;
+                    const isOrdersTable = tableName === 'orders';
+                    
+                    html += '<tr>';
+                    columns.forEach(col => {
+                        const colName = col.name || col.column_name;
+                        const value = row[colName];
+                        let displayValue = value === null || value === undefined ? '<span class="null-value">NULL</span>' : escapeHtml(String(value));
+                        
+                        if (colName === 'status' && isOrdersTable) {
+                            displayValue = `<span class="status-badge ${value || 'pending'}">${escapeHtml(value || 'Pending')}</span>`;
+                        }
+                        
+                        if (String(value).length > 100) {
+                            displayValue = displayValue.substring(0, 100) + '...';
+                        }
+                        html += `<td title="${escapeHtml(String(value))}">${displayValue}</td>`;
+                    });
+                    
+                    html += `<td style="text-align:center;">
+                        <div class="actions">
+                            <button class="edit" onclick="openEditRowModal(${rowId})"><i class="fas fa-edit"></i></button>`;
+                    
+                    if (isOrdersTable) {
+                        html += `<button class="status-btn" onclick="openOrderStatusModal(${rowId})">
+                            <i class="fas fa-truck"></i> Status
+                        </button>`;
+                    }
+                    
+                    html += `<button class="delete" onclick="openDeleteModal(${rowId})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>`;
+                    html += '</tr>';
+                });
+            }
+
+            html += `</tbody></table></div>`;
+            html += `<div style="margin-top:0.5rem;font-size:0.85rem;color:#64748b;">${rows.length} rows</div>`;
+
+            display.innerHTML = html;
+        }
+
+        // ==========================================
+        // OPEN ORDER STATUS MODAL
+        // ==========================================
+        window.openOrderStatusModal = function(rowId) {
+            const row = currentRows.find(r => (r[currentPrimaryKey] || r.id) === rowId);
+            if (!row) {
+                showToast('Order not found', true);
+                return;
+            }
+
+            orderStatusTarget = rowId;
+            
+            document.getElementById('orderStatusOrderId').value = row.id || rowId;
+            document.getElementById('orderStatusCustomerEmail').value = row.customer_email || 'N/A';
+            document.getElementById('orderStatusCurrentStatus').value = row.status || 'pending';
+            document.getElementById('orderStatusNewStatus').value = row.status || 'pending';
+            document.getElementById('orderStatusNotes').value = '';
+            
+            openModal('editOrderStatusModal');
+        };
+
+        // ==========================================
+        // UPDATE ORDER STATUS - FIXED (No updated_at)
+        // ==========================================
+        window.updateOrderStatus = async function() {
+            const rowId = orderStatusTarget;
+            const newStatus = document.getElementById('orderStatusNewStatus').value;
+            const notes = document.getElementById('orderStatusNotes').value.trim();
+            
+            if (!rowId) {
+                showToast('No order selected', true);
+                return;
+            }
+            
+            const order = currentRows.find(r => (r[currentPrimaryKey] || r.id) === rowId);
+            if (!order) {
+                showToast('Order not found', true);
+                return;
+            }
+            
+            const currentStatus = order.status || 'pending';
+            
+            if (newStatus === currentStatus) {
+                showToast('Status is already set to ' + newStatus, true);
+                return;
+            }
+            
+            const btn = document.querySelector('#editOrderStatusModal .btn-primary');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            
+            try {
+                const token = getAdminToken();
+                if (!token) {
+                    throw new Error('Admin token not found. Please login again.');
+                }
+                
+                const response = await fetch(`/api/orders/${rowId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        status: newStatus,
+                        notes: notes || null
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || result.message || 'Failed to update status');
+                }
+                
+                if (result.emailSent) {
+                    showToast(`✅ Status updated to ${newStatus}. Email sent to ${order.customer_email || 'customer'}.`);
+                } else if (result.emailError) {
+                    showToast(`✅ Status updated to ${newStatus}. Email failed: ${result.emailError}`);
+                } else {
+                    showToast(`✅ Status updated to ${newStatus}.`);
+                }
+                
+                closeModal('editOrderStatusModal');
+                
+                setTimeout(() => {
+                    selectTable('orders');
+                }, 500);
+                
+            } catch (e) {
+                console.error('❌ Status update error:', e);
+                showToast('Failed to update status: ' + e.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+
+        // ==========================================
+        // OPEN INSERT ROW MODAL
+        // ==========================================
+        window.openInsertRowModal = function() {
+            if (!currentTable) {
+                showToast('Please select a table first', true);
+                return;
+            }
+
+            const container = document.getElementById('insertRowFields');
+            
+            if (!currentColumns || currentColumns.length === 0) {
+                container.innerHTML = '<p style="color:#94a3b8;padding:1rem;text-align:center;">No columns available</p>';
+                return;
+            }
+            
+            let html = '';
+            let hasFields = false;
+            const requiredColumns = ['name', 'price', 'base_price'];
+            
+            for (const col of currentColumns) {
+                const colName = col.name || col.column_name;
+                if (colName === 'id' || colName === 'created_at' || colName === 'updated_at') {
+                    continue;
+                }
+                
+                hasFields = true;
+                const isRequired = requiredColumns.includes(colName);
+                const placeholder = `Enter ${colName}`;
+                const inputType = (col.type === 'number' || col.type === 'integer' || (col.data_type && col.data_type.includes('int'))) ? 'number' : 'text';
+                
+                html += `
+                    <div class="form-group">
+                        <label>${escapeHtml(colName)} ${isRequired ? '<span class="required-star">*</span>' : ''}</label>
+                        <input type="${inputType}" 
+                               id="ins_${colName}" 
+                               placeholder="${escapeHtml(placeholder)}" 
+                               ${isRequired ? 'required' : ''}>
+                        <small>${escapeHtml(col.type || col.data_type)}</small>
+                    </div>
+                `;
+            }
+            
+            if (!hasFields) {
+                html = '<p style="color:#94a3b8;padding:1rem;text-align:center;">No editable fields available. All columns are auto-generated.</p>';
+            }
+            
+            container.innerHTML = html;
+            openModal('insertRowModal');
+        };
+
+        // ==========================================
+        // INSERT ROW
+        // ==========================================
+        window.insertRow = async function() {
+            const token = getAdminToken();
+            if (!token) {
+                showToast('Admin token not found. Please login again.', true);
+                return;
+            }
+
+            const rowData = {};
+            let hasError = false;
+            const requiredColumns = ['name', 'price', 'base_price'];
+
+            for (const col of currentColumns) {
+                const colName = col.name || col.column_name;
+                if (colName === 'id' || colName === 'created_at' || colName === 'updated_at') {
+                    continue;
+                }
+                
+                const input = document.getElementById(`ins_${colName}`);
+                if (!input) continue;
+
+                let value = input.value.trim();
+                const isRequired = requiredColumns.includes(colName);
+                
+                if (value === '') {
+                    if (isRequired) {
+                        showToast(`Please fill in ${colName} (required)`, true);
+                        hasError = true;
+                    }
+                    continue;
+                }
+
+                const colType = col.type || col.data_type;
+                if (colType === 'number' || colType === 'integer' || (colType && colType.includes('int'))) {
+                    value = parseFloat(value);
+                    if (isNaN(value)) {
+                        showToast(`Invalid number for ${colName}`, true);
+                        hasError = true;
+                        continue;
+                    }
+                }
+                
+                rowData[colName] = value;
+            }
+
+            if (hasError) return;
+
+            if (Object.keys(rowData).length === 0) {
+                showToast('Please fill in at least one field', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/data/${currentTable}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ row: rowData })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to insert row');
+                }
+
+                showToast('✅ Row inserted successfully!');
+                closeModal('insertRowModal');
+                selectTable(currentTable);
+
+            } catch (e) {
+                console.error('Insert error:', e);
+                showToast(e.message || 'Failed to insert row', true);
+            }
+        };
+
+        // ==========================================
+        // OPEN EDIT ROW MODAL
+        // ==========================================
+        window.openEditRowModal = function(rowId) {
+            const row = currentRows.find(r => (r[currentPrimaryKey] || r.id) === rowId);
+            if (!row) {
+                showToast('Row not found', true);
+                return;
+            }
+
+            editTarget = rowId;
+            const container = document.getElementById('editRowFields');
+            
+            let html = '';
+            for (const col of currentColumns) {
+                const colName = col.name || col.column_name;
+                const value = row[colName] !== undefined && row[colName] !== null ? row[colName] : '';
+                const isPrimaryKey = colName === currentPrimaryKey;
+                const isReadOnly = isPrimaryKey || colName === 'created_at';
+                
+                html += `
+                    <div class="form-group">
+                        <label>${escapeHtml(colName)} ${isReadOnly ? '<span style="color:#94a3b8;font-weight:400;">(read-only)</span>' : ''}</label>
+                        <input type="${col.type === 'number' || col.type === 'integer' ? 'number' : 'text'}" 
+                               id="edit_${colName}" 
+                               value="${escapeHtml(String(value))}" 
+                               ${isReadOnly ? 'disabled' : ''}>
+                        ${isReadOnly ? '' : `<small>${escapeHtml(col.type || col.data_type)}</small>`}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+            openModal('editRowModal');
+        };
+
+        // ==========================================
+        // UPDATE ROW
+        // ==========================================
+        window.updateRow = async function() {
+            if (editTarget === null) {
+                showToast('No row selected', true);
+                return;
+            }
+
+            const token = getAdminToken();
+            if (!token) {
+                showToast('Admin token not found. Please login again.', true);
+                return;
+            }
+
+            const rowData = {};
+            let hasError = false;
+
+            for (const col of currentColumns) {
+                const colName = col.name || col.column_name;
+                if (colName === currentPrimaryKey || colName === 'created_at') continue;
+                
+                const input = document.getElementById(`edit_${colName}`);
+                if (!input || input.disabled) continue;
+
+                let value = input.value.trim();
+                
+                if (value === '') {
+                    continue;
+                }
+
+                const colType = col.type || col.data_type;
+                if (colType === 'number' || colType === 'integer' || (colType && colType.includes('int'))) {
+                    value = parseFloat(value);
+                    if (isNaN(value)) {
+                        showToast(`Invalid number for ${colName}`, true);
+                        hasError = true;
+                        continue;
+                    }
+                }
+                
+                rowData[colName] = value;
+            }
+
+            if (hasError) return;
+
+            if (Object.keys(rowData).length === 0) {
+                showToast('No changes to save', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/data/${currentTable}/${editTarget}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ 
+                        row: rowData,
+                        idColumn: currentPrimaryKey
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to update row');
+                }
+
+                showToast('✅ Row updated successfully!');
+                closeModal('editRowModal');
+                selectTable(currentTable);
+
+            } catch (e) {
+                console.error('Update error:', e);
+                showToast(e.message || 'Failed to update row', true);
+            }
+        };
+
+        // ==========================================
+        // DELETE ROW
+        // ==========================================
+        window.openDeleteModal = function(rowId) {
+            deleteTarget = rowId;
+            openModal('confirmDeleteModal');
+        };
+
+        window.confirmDeleteRow = async function() {
+            if (deleteTarget === null) {
+                showToast('No row selected', true);
+                return;
+            }
+
+            const token = getAdminToken();
+            if (!token) {
+                showToast('Admin token not found. Please login again.', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/data/${currentTable}/${deleteTarget}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ idColumn: currentPrimaryKey })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to delete row');
+                }
+
+                showToast('🗑️ Row deleted successfully!');
+                closeModal('confirmDeleteModal');
+                deleteTarget = null;
+                selectTable(currentTable);
+
+            } catch (e) {
+                console.error('Delete error:', e);
+                showToast(e.message || 'Failed to delete row', true);
+            }
+        };
+
+        // ==========================================
+        // CREATE TABLE
+        // ==========================================
+        window.openCreateTableModal = function() {
+            document.getElementById('newTableName').value = '';
+            document.getElementById('newTableColumns').value = 'id SERIAL PRIMARY KEY\nname VARCHAR(100) NOT NULL\nprice DECIMAL(10,2)\ncreated_at TIMESTAMP DEFAULT NOW()';
+            openModal('createTableModal');
+        };
+
+        window.createTable = async function() {
+            const tableName = document.getElementById('newTableName').value.trim();
+            const columns = document.getElementById('newTableColumns').value.trim();
+
+            if (!tableName) {
+                showToast('Please enter a table name', true);
+                return;
+            }
+
+            if (!columns) {
+                showToast('Please enter column definitions', true);
+                return;
+            }
+
+            if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+                showToast('Table name can only contain letters, numbers, and underscores', true);
+                return;
+            }
+
+            showToast('⚠️ Table creation is only available in the Supabase SQL Editor. Please use the Supabase dashboard.', true);
+            closeModal('createTableModal');
+            window.open('https://app.supabase.com', '_blank');
+        };
+
+        // ==========================================
+        // REFRESH
+        // ==========================================
+        window.refreshData = function() {
+            if (currentTable) {
+                selectTable(currentTable);
+            } else {
+                loadTables();
+            }
+        };
+
+        // ==========================================
+        // EVENT LISTENERS
+        // ==========================================
+        document.querySelector('.menu-toggle').addEventListener('click', function() {
+            document.querySelector('.nav-menu').classList.toggle('active');
+        });
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+
+        // ==========================================
+        // INITIALIZE
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', async function() {
+            updateAuthUI();
+            
+            const isAdmin = await checkAdminAuth();
+            if (isAdmin) {
+                loadTables();
+            }
+        });
+
+    })();
+</script>
+</body>
+</html>
