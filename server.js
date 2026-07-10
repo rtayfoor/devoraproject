@@ -1,5 +1,5 @@
 // ==========================================
-// SERVER.JS - ORMIDIA CAR ACCESSORIES (Supabase Only)
+// SERVER.JS - ORMIDIA CAR ACCESSORIES
 // ==========================================
 
 const dotenv = require('dotenv');
@@ -12,7 +12,6 @@ const rateLimit = require('express-rate-limit');
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
 
 // ==========================================
 // RATE LIMITING MIDDLEWARE
@@ -683,6 +682,26 @@ app.post('/api/reviews', async (req, res) => {
 });
 
 // ==========================================
+// PAYMENT ROUTES
+// ==========================================
+
+const paymentRoutes = require('./payment-routes');
+app.use('/api/payment', paymentRoutes);
+
+app.get('/api/payment/config', (req, res) => {
+    const bankConfig = require('./bank-config');
+    res.json({
+        bankDetails: {
+            bankName: bankConfig.bankDetails.bankName,
+            accountName: bankConfig.bankDetails.accountName,
+            iban: bankConfig.bankDetails.iban,
+            swift: bankConfig.bankDetails.swift,
+            currency: bankConfig.bankDetails.currency
+        }
+    });
+});
+
+// ==========================================
 // PUBLIC ROUTES
 // ==========================================
 
@@ -755,33 +774,28 @@ app.get('/admin-login.html', (req, res) => {
 app.get('/reset-password.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'reset-password.html'));
 });
-// Add at the top of server.js with other requires
-const paymentRoutes = require('./payment-routes');
 
-// Add after your other route definitions
-app.use('/api/payment', paymentRoutes);
+app.get('/payment-instructions.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'payment-instructions.html'));
+});
 
-// Also add this public endpoint for getting payment config
-app.get('/api/payment/config', (req, res) => {
-    const bankConfig = require('./bank-config');
-    res.json({
-        bankDetails: {
-            bankName: bankConfig.bankDetails.bankName,
-            accountName: bankConfig.bankDetails.accountName,
-            iban: bankConfig.bankDetails.iban,
-            swift: bankConfig.bankDetails.swift,
-            currency: bankConfig.bankDetails.currency
-        }
+// ==========================================
+// VERCEl EXPORT
+// ==========================================
+// Export for Vercel serverless deployment
+module.exports = app;
+
+// ==========================================
+// START SERVER (Local Development Only)
+// ==========================================
+if (require.main === module) {
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+        console.log(`\n🚀 ========================================`);
+        console.log(`✅ Server Running!`);
+        console.log(`🌐 Open: http://localhost:${port}`);
+        console.log(`🔒 Admin Login: http://localhost:${port}/admin-login.html`);
+        console.log(`📧 Test Email: http://localhost:${port}/api/test-email`);
+        console.log(`========================================\n`);
     });
-});
-// ==========================================
-// START SERVER
-// ==========================================
-app.listen(port, () => {
-    console.log(`\n🚀 ========================================`);
-    console.log(`✅ Server Running!`);
-    console.log(`🌐 Open: http://localhost:${port}`);
-    console.log(`🔒 Admin Login: http://localhost:${port}/admin-login.html`);
-    console.log(`📧 Test Email: http://localhost:${port}/api/test-email`);
-    console.log(`========================================\n`);
-});
+}
