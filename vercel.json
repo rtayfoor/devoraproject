@@ -18,6 +18,14 @@
       "use": "@vercel/static"
     },
     {
+      "src": "*.jpg",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.png",
+      "use": "@vercel/static"
+    },
+    {
       "src": "*.json",
       "use": "@vercel/static"
     }
@@ -46,6 +54,10 @@
     {
       "src": "/(.*)\\.png",
       "dest": "/$1.png"
+    },
+    {
+      "src": "/(.*)\\.json",
+      "dest": "/$1.json"
     },
     {
       "src": "/",
