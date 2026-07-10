@@ -17,7 +17,6 @@ const app = express();
 // RATE LIMITING MIDDLEWARE
 // ==========================================
 
-// Login rate limiter - 5 attempts per 15 minutes
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
@@ -28,7 +27,6 @@ const loginLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// General API rate limiter
 const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 100,
@@ -689,16 +687,20 @@ const paymentRoutes = require('./payment-routes');
 app.use('/api/payment', paymentRoutes);
 
 app.get('/api/payment/config', (req, res) => {
-    const bankConfig = require('./bank-config');
-    res.json({
-        bankDetails: {
-            bankName: bankConfig.bankDetails.bankName,
-            accountName: bankConfig.bankDetails.accountName,
-            iban: bankConfig.bankDetails.iban,
-            swift: bankConfig.bankDetails.swift,
-            currency: bankConfig.bankDetails.currency
-        }
-    });
+    try {
+        const bankConfig = require('./bank-config');
+        res.json({
+            bankDetails: {
+                bankName: bankConfig.bankDetails.bankName,
+                accountName: bankConfig.bankDetails.accountName,
+                iban: bankConfig.bankDetails.iban,
+                swift: bankConfig.bankDetails.swift,
+                currency: bankConfig.bankDetails.currency
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Bank config not available' });
+    }
 });
 
 // ==========================================
@@ -780,9 +782,26 @@ app.get('/payment-instructions.html', (req, res) => {
 });
 
 // ==========================================
+// 404 Handler
+// ==========================================
+app.use((req, res) => {
+    res.status(404).sendFile(path.join(__dirname, '404.html'));
+});
+
+// ==========================================
+// ERROR HANDLER
+// ==========================================
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).json({ 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    });
+});
+
+// ==========================================
 // VERCEl EXPORT
 // ==========================================
-// Export for Vercel serverless deployment
 module.exports = app;
 
 // ==========================================
