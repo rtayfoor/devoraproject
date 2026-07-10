@@ -180,31 +180,18 @@
         }
         .back-link:hover { color: #E30613; }
         .back-link i { margin-right: 0.25rem; }
-        .divider {
-            text-align: center;
-            margin: 1rem 0;
-            color: #94a3b8;
-            font-size: 0.85rem;
-            position: relative;
+        .debug-info {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #64748b;
+            font-family: monospace;
+            word-break: break-all;
+            display: none;
         }
-        .divider::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            width: 45%;
-            height: 1px;
-            background: #e2e8f0;
-        }
-        .divider::after {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: 50%;
-            width: 45%;
-            height: 1px;
-            background: #e2e8f0;
-        }
+        .debug-info.show { display: block; }
     </style>
 </head>
 <body>
@@ -226,15 +213,15 @@
 
     <!-- Login Tab -->
     <div id="tab-login" class="tab-content active">
-        <form id="loginForm">
+        <form id="loginForm" autocomplete="on">
             <div class="form-group">
                 <label>Email Address</label>
-                <input type="email" id="loginEmail" placeholder="your@email.com" required>
+                <input type="email" id="loginEmail" placeholder="your@email.com" required autocomplete="email">
             </div>
             <div class="form-group">
                 <label>Password</label>
                 <div class="password-wrapper">
-                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
                     <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">
                         <i class="fas fa-eye"></i>
                     </button>
@@ -247,19 +234,19 @@
 
     <!-- Register Tab -->
     <div id="tab-register" class="tab-content">
-        <form id="registerForm">
+        <form id="registerForm" autocomplete="on">
             <div class="form-group">
                 <label>Full Name</label>
-                <input type="text" id="registerName" placeholder="John Doe" required>
+                <input type="text" id="registerName" placeholder="John Doe" required autocomplete="name">
             </div>
             <div class="form-group">
                 <label>Email Address</label>
-                <input type="email" id="registerEmail" placeholder="your@email.com" required>
+                <input type="email" id="registerEmail" placeholder="your@email.com" required autocomplete="email">
             </div>
             <div class="form-group">
                 <label>Password</label>
                 <div class="password-wrapper">
-                    <input type="password" id="registerPassword" placeholder="Min 6 characters" required minlength="6">
+                    <input type="password" id="registerPassword" placeholder="Min 6 characters" required minlength="6" autocomplete="new-password">
                     <button type="button" class="password-toggle" onclick="togglePassword('registerPassword')">
                         <i class="fas fa-eye"></i>
                     </button>
@@ -270,6 +257,13 @@
     </div>
 
     <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+    
+    <!-- Debug Info -->
+    <div id="debugInfo" class="debug-info">
+        <strong>Debug Info:</strong><br>
+        <span id="debugText">Loading...</span>
+    </div>
+    <button onclick="toggleDebug()" style="margin-top:0.5rem;background:none;border:none;color:#94a3b8;font-size:0.75rem;cursor:pointer;text-decoration:underline;">Toggle Debug</button>
 </div>
 
 <!-- Forgot Password Modal -->
@@ -287,57 +281,67 @@
 
 <script>
     (function() {
+        // ==========================================
+        // SUPABASE CONFIG - Hardcoded for reliability
+        // ==========================================
+        const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
+        
         let supabase = null;
         let supabaseInitialized = false;
 
-        // ==========================================
-        // SUPABASE CONFIG - Hardcoded with fallback
-        // ==========================================
-        const HARDCODED_CONFIG = {
-            supabaseUrl: 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co',
-            supabaseAnonKey: 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S'
-        };
+        console.log('🔐 Auth page loaded');
+        console.log('📡 Supabase URL:', SUPABASE_URL);
+        console.log('🔑 Supabase Key:', SUPABASE_ANON_KEY ? '✅ Present' : '❌ Missing');
 
-        async function getSupabaseClient() {
+        // ==========================================
+        // GET SUPABASE CLIENT - DIRECT NO FETCH
+        // ==========================================
+        function getSupabaseClient() {
             if (supabase) return supabase;
             if (supabaseInitialized) return supabase;
 
-            let config = null;
-
-            // Try server first (for localhost)
             try {
-                const response = await fetch('/api/supabase/config');
-                if (response.ok) {
-                    const serverConfig = await response.json();
-                    if (serverConfig.supabaseUrl && serverConfig.supabaseAnonKey) {
-                        config = serverConfig;
-                    }
+                if (typeof window.supabase === 'undefined') {
+                    console.error('❌ Supabase library not loaded');
+                    showMessage('Failed to load Supabase library. Please refresh.', 'error');
+                    return null;
                 }
-            } catch (e) {
-                console.log('Server not available, using hardcoded config');
-            }
 
-            // Use hardcoded config as fallback
-            if (!config || !config.supabaseUrl) {
-                config = HARDCODED_CONFIG;
-            }
+                if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+                    console.error('❌ Missing Supabase credentials');
+                    showMessage('Configuration error. Please try again.', 'error');
+                    return null;
+                }
 
-            if (!config.supabaseUrl || !config.supabaseAnonKey) {
-                console.error('Missing Supabase credentials');
-                showMessage('Failed to connect to database. Please try again.', 'error');
-                return null;
-            }
-
-            try {
-                supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 supabaseInitialized = true;
+                console.log('✅ Supabase client created successfully');
+                
+                // Update debug
+                updateDebug('Supabase client created');
+                
                 return supabase;
             } catch (e) {
-                console.error('Failed to create Supabase client:', e);
-                showMessage('Failed to connect to database. Please try again.', 'error');
+                console.error('❌ Failed to create Supabase client:', e);
+                showMessage('Failed to connect. Please try again.', 'error');
                 return null;
             }
         }
+
+        // ==========================================
+        // DEBUG
+        // ==========================================
+        function updateDebug(text) {
+            const el = document.getElementById('debugText');
+            if (el) {
+                el.textContent = text + ' | ' + new Date().toLocaleTimeString();
+            }
+        }
+
+        window.toggleDebug = function() {
+            document.getElementById('debugInfo').classList.toggle('show');
+        };
 
         // ==========================================
         // TOGGLE PASSWORD VISIBILITY
@@ -363,11 +367,15 @@
             if (!el) return;
             el.className = `message ${type}`;
             el.textContent = text;
-            setTimeout(() => {
+            console.log(`📩 ${type.toUpperCase()}: ${text}`);
+            
+            // Auto-hide after 6 seconds
+            clearTimeout(el._timeout);
+            el._timeout = setTimeout(() => {
                 if (el.className === `message ${type}`) {
                     el.className = 'message';
                 }
-            }, 5000);
+            }, 6000);
         }
 
         // ==========================================
@@ -384,6 +392,42 @@
         });
 
         // ==========================================
+        // TEST SUPABASE CONNECTION
+        // ==========================================
+        async function testSupabaseConnection() {
+            try {
+                const client = getSupabaseClient();
+                if (!client) {
+                    showMessage('❌ Cannot connect to database', 'error');
+                    return false;
+                }
+
+                // Simple test query
+                const { data, error } = await client
+                    .from('users')
+                    .select('count', { count: 'exact', head: true });
+
+                if (error) {
+                    console.warn('⚠️ Test query failed:', error);
+                    // If table doesn't exist, that's okay - we can still auth
+                    if (error.code === '42P01') {
+                        showMessage('✅ Database connected (users table not found yet)', 'info');
+                        return true;
+                    }
+                    showMessage('⚠️ Database connection issue: ' + error.message, 'error');
+                    return false;
+                }
+
+                console.log('✅ Database connection test passed');
+                showMessage('✅ Connected to database', 'success');
+                return true;
+            } catch (e) {
+                console.error('❌ Connection test failed:', e);
+                return false;
+            }
+        }
+
+        // ==========================================
         // LOGIN
         // ==========================================
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -398,16 +442,25 @@
                 return;
             }
 
+            // Validate email format
+            if (!email.includes('@') || !email.includes('.')) {
+                showMessage('Please enter a valid email address', 'error');
+                return;
+            }
+
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+            updateDebug(`Attempting login for: ${email}`);
 
             try {
-                const client = await getSupabaseClient();
+                const client = getSupabaseClient();
                 if (!client) {
                     btn.disabled = false;
                     btn.innerHTML = 'Sign In';
                     return;
                 }
+
+                console.log('🔑 Attempting login for:', email);
 
                 const { data, error } = await client.auth.signInWithPassword({
                     email: email,
@@ -415,20 +468,31 @@
                 });
 
                 if (error) {
-                    console.error('Auth error:', error);
+                    console.error('❌ Auth error:', error);
+                    updateDebug(`Auth error: ${error.message} (${error.status || 'unknown'})`);
+                    
+                    // Handle specific error types
                     if (error.message.includes('Invalid login credentials')) {
-                        showMessage('❌ Invalid email or password', 'error');
+                        showMessage('❌ Invalid email or password. Please try again.', 'error');
                     } else if (error.message.includes('Email not confirmed')) {
-                        showMessage('📧 Please confirm your email first', 'info');
+                        showMessage('📧 Please check your email and confirm your account first.', 'info');
+                    } else if (error.message.includes('rate limit')) {
+                        showMessage('⏳ Too many attempts. Please wait a few minutes.', 'error');
+                    } else if (error.message.includes('network')) {
+                        showMessage('🌐 Network error. Please check your connection.', 'error');
                     } else {
                         showMessage('❌ ' + error.message, 'error');
                     }
+                    
                     btn.disabled = false;
                     btn.innerHTML = 'Sign In';
                     return;
                 }
 
                 if (data?.user) {
+                    console.log('✅ Login successful for:', data.user.email);
+                    updateDebug(`Login successful: ${data.user.email}`);
+                    
                     // Store user in localStorage
                     const user = {
                         id: data.user.id,
@@ -436,7 +500,7 @@
                         name: data.user.user_metadata?.name || email.split('@')[0]
                     };
                     
-                    // Try to get full user profile
+                    // Try to get user profile
                     try {
                         const { data: userData, error: userError } = await client
                             .from('users')
@@ -446,8 +510,10 @@
                         
                         if (!userError && userData) {
                             localStorage.setItem('user', JSON.stringify(userData));
+                            console.log('✅ User profile loaded');
                         } else {
                             localStorage.setItem('user', JSON.stringify(user));
+                            console.log('⚠️ No user profile, using basic info');
                         }
                     } catch (e) {
                         localStorage.setItem('user', JSON.stringify(user));
@@ -459,12 +525,13 @@
                         window.location.href = 'index.html';
                     }, 1000);
                 } else {
-                    showMessage('❌ Login failed. Please try again.', 'error');
+                    showMessage('❌ Login failed. No user data returned.', 'error');
                     btn.disabled = false;
                     btn.innerHTML = 'Sign In';
                 }
             } catch (error) {
-                console.error('Login error:', error);
+                console.error('❌ Login error:', error);
+                updateDebug(`Login error: ${error.message}`);
                 showMessage('❌ Login failed. Please try again.', 'error');
                 btn.disabled = false;
                 btn.innerHTML = 'Sign In';
@@ -496,12 +563,14 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
 
             try {
-                const client = await getSupabaseClient();
+                const client = getSupabaseClient();
                 if (!client) {
                     btn.disabled = false;
                     btn.innerHTML = 'Create Account';
                     return;
                 }
+
+                console.log('📝 Attempting signup for:', email);
 
                 const { data, error } = await client.auth.signUp({
                     email: email,
@@ -514,7 +583,8 @@
                 });
 
                 if (error) {
-                    console.error('Signup error:', error);
+                    console.error('❌ Signup error:', error);
+                    
                     if (error.message.includes('already registered')) {
                         showMessage('❌ This email is already registered. Please sign in.', 'error');
                     } else {
@@ -526,6 +596,8 @@
                 }
 
                 if (data?.user) {
+                    console.log('✅ Signup successful for:', data.user.email);
+                    
                     // Create user profile
                     try {
                         const { error: insertError } = await client
@@ -537,26 +609,32 @@
                             }]);
 
                         if (insertError) {
-                            console.warn('Could not create user profile:', insertError);
+                            console.warn('⚠️ Could not create user profile:', insertError);
+                        } else {
+                            console.log('✅ User profile created');
                         }
                     } catch (e) {
-                        console.warn('Profile creation error:', e);
+                        console.warn('⚠️ Profile creation error:', e);
                     }
 
                     showMessage('✅ Account created! Please check your email to confirm.', 'success');
+                    
+                    // Switch to login tab after 2 seconds
+                    setTimeout(() => {
+                        document.querySelector('.tab[data-tab="login"]').click();
+                        document.getElementById('loginEmail').value = email;
+                    }, 2000);
+                    
                     btn.disabled = false;
                     btn.innerHTML = 'Create Account';
                     document.getElementById('registerForm').reset();
-                    
-                    // Switch to login tab
-                    document.querySelector('.tab[data-tab="login"]').click();
                 } else {
                     showMessage('❌ Signup failed. Please try again.', 'error');
                     btn.disabled = false;
                     btn.innerHTML = 'Create Account';
                 }
             } catch (error) {
-                console.error('Signup error:', error);
+                console.error('❌ Signup error:', error);
                 showMessage('❌ Signup failed. Please try again.', 'error');
                 btn.disabled = false;
                 btn.innerHTML = 'Create Account';
@@ -617,16 +695,6 @@
                 document.getElementById('loginForm').dispatchEvent(new Event('submit'));
             }
         });
-        document.getElementById('registerEmail').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('registerForm').dispatchEvent(new Event('submit'));
-            }
-        });
-        document.getElementById('registerPassword').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('registerForm').dispatchEvent(new Event('submit'));
-            }
-        });
 
         // ==========================================
         // CLOSE MODAL ON ESC
@@ -646,7 +714,17 @@
             }
         });
 
-        console.log('🔐 Auth page loaded successfully');
+        // ==========================================
+        // INITIALIZE
+        // ==========================================
+        console.log('🔐 Auth page initialized');
+        
+        // Test connection on load
+        setTimeout(() => {
+            testSupabaseConnection();
+        }, 500);
+
+        updateDebug('Auth page ready');
     })();
 </script>
 </body>
